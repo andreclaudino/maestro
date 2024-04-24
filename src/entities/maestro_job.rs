@@ -1,6 +1,7 @@
+use anyhow::Ok;
 use futures::{pin_mut, TryStreamExt};
 use k8s_openapi::api::batch::v1::Job;
-use kube::{runtime::{watcher, WatchStreamExt}, Api};
+use kube::{runtime::{watcher, WatchStreamExt}, Api, api::DeleteParams};
 
 use super::maestro_job_status::MaestroJobStatus;
 
@@ -73,6 +74,17 @@ impl MaestroJob {
             ..watcher::Config::default()
         };
         watcher_config
+    }
+
+    /// TODO Implement a way to be sure that delection is competed
+    pub async fn delete_job(&self, dry_run: bool) -> anyhow::Result<()> {
+        let api = Api::<Job>::namespaced(self.client.clone(), &self.namespace);
+        let job_name = &self.name;
+        let delete_params = DeleteParams{dry_run, ..DeleteParams::default()};
+        
+        api.delete(job_name, &delete_params).await?;
+        
+        Ok(())
     }
 }
 

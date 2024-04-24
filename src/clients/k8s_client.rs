@@ -24,5 +24,4 @@ impl MaestroK8sClient {
 
         Ok(maestro_job)
     }
-
 }

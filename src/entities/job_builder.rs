@@ -1,40 +1,16 @@
-use super::{container_like::ContainerLike, maestro_container::MaestroContainer};
+use k8s_openapi::api::{batch::v1::{Job, JobSpec}, core::v1::{Container, PodSpec, PodTemplateSpec}};
+use kube::api::ObjectMeta;
 
-const MAESTRO_JOB_NAME: &str = "maestro-";
-
-#[derive(Clone, Debug)]
-pub enum JobNameType {
-    DefinedName(String),
-    GenerateName(String)
-}
-
-impl Default for JobNameType {
-    fn default() -> Self {
-        JobNameType::GenerateName(MAESTRO_JOB_NAME.to_owned())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum RestartPolicy {
-    OnFailure,
-    Never
-}
-
-
-impl Default for RestartPolicy {
-    fn default() -> Self {
-        RestartPolicy::OnFailure
-    }
-}
+use super::{container_like::ContainerLike, job_name_type::JobNameType, maestro_container::MaestroContainer, restart_policy::RestartPolicy};
 
 
 pub struct JobBuilder<C=MaestroContainer> where C: ContainerLike {
-    name: JobNameType,
-    namespace: String,
-    backoff_limit: usize,
+    pub name: JobNameType,
+    pub namespace: String,
+    pub backoff_limit: usize,
 
-    restart_policy: RestartPolicy,
-    containers: Vec<C>,
+    pub restart_policy: RestartPolicy,
+    pub containers: Vec<C>,
 }
 
 impl<C> JobBuilder<C> where C: ContainerLike {
@@ -73,4 +49,61 @@ impl<C> JobBuilder<C> where C: ContainerLike {
         self.containers.push(container_like);
         self
     }
+
+    pub fn build(self) -> anyhow::Result<Job> {
+        
+        let pod_spec = PodSpec {
+            restart_policy: self.restart_policy.into(),
+            containers: extract_container_list(&self.containers),
+            ..PodSpec::default()
+        };
+
+        let pod_template_spec = PodTemplateSpec{
+            spec: Some(pod_spec),
+
+            ..PodTemplateSpec::default()
+        };
+                
+        let job_spec = JobSpec{
+            template: pod_template_spec,
+            backoff_limit: Some(self.backoff_limit as i32),
+            ..JobSpec::default()
+        };
+        
+        let job_meta = match self.name {
+            JobNameType::DefinedName(define_name) => ObjectMeta{
+                name: Some(define_name.to_string()),
+                namespace: Some(self.namespace.to_owned()),
+                ..ObjectMeta::default()
+            },
+            JobNameType::GenerateName(generate_name) => ObjectMeta{
+                generate_name: Some(generate_name.to_string()),
+                namespace: Some(self.namespace.to_owned()),
+                ..ObjectMeta::default()
+            },
+        };
+
+        let job = Job{ 
+            spec: Some(job_spec),
+            metadata: job_meta,
+            ..Job::default()
+        };
+        
+        Ok(job)
+    }
+
+}
+
+fn extract_container_list<C>(containers: &Vec<C>) -> Vec<Container> where C: ContainerLike {
+    containers.iter().map(|container_like|{
+        let container = container_like.into_container()?;
+        anyhow::Ok(container)
+    }).filter_map(|container_result| {
+        if let Ok(container) = container_result {
+            Some(container)
+        } else {
+            None
+        }
+    })
+    .collect()
 }

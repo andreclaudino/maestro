@@ -1,3 +1,4 @@
+mod maestro_log;
 mod job_name_type;
 mod restart_policy;
 mod container_like;
@@ -20,6 +21,7 @@ pub mod job {
     pub use super::maestro_job_status::MaestroJobStatus;
     pub use super::maestro_job::MaestroJob;
     pub use super::job_like::JobLike;
+    pub use super::maestro_log::MaestroLogLine;
 }
 
 pub mod container {

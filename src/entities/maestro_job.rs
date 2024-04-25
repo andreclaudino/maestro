@@ -1,9 +1,11 @@
+use k8s_openapi::api::core::v1::Pod;
 use anyhow::Ok;
-use futures::{pin_mut, TryStreamExt};
+use futures::{pin_mut, AsyncBufReadExt, Stream, TryStreamExt};
 use k8s_openapi::api::batch::v1::Job;
-use kube::{runtime::{watcher, WatchStreamExt}, Api, api::DeleteParams};
+use kube::{api::{DeleteParams, ListParams, LogParams}, runtime::{watcher, WatchStreamExt}, Api};
+use async_stream::try_stream;
 
-use super::maestro_job_status::MaestroJobStatus;
+use super::{maestro_job_status::MaestroJobStatus, maestro_log::MaestroLogLine};
 
 pub struct MaestroJob {
     client: kube::Client,
@@ -77,6 +79,7 @@ impl MaestroJob {
     }
 
     /// TODO Implement a way to be sure that delection is competed
+    /// TODO the delete job function do not delete the pod created by the job, this should be implemented
     pub async fn delete_job(&self, dry_run: bool) -> anyhow::Result<()> {
         let api = Api::<Job>::namespaced(self.client.clone(), &self.namespace);
         let job_name = &self.name;
@@ -85,6 +88,30 @@ impl MaestroJob {
         api.delete(job_name, &delete_params).await?;
         
         Ok(())
+    }
+
+    pub async fn get_log(&self) -> impl Stream<Item = anyhow::Result<MaestroLogLine>>{
+        let client = self.client.clone();
+        let namespace = self.namespace.clone();
+        let job_name = self.name.clone();
+        try_stream! {
+            let api = Api::<Pod>::namespaced(client, &namespace);
+            let pod_label = format!("job-name={}", job_name);
+            let field_selector = Some("status.phase=Running".to_owned());
+            let list_paramms = ListParams{field_selector, ..ListParams::default()}
+            .labels(&pod_label);
+            
+            let pods_list = api.list(&list_paramms).await?;
+            if let Some(selected_pod) = pods_list.items.first() {
+                let pod_name = selected_pod.metadata.name.as_ref().unwrap();
+                let pod_params = LogParams::default();
+                let mut logs = api.log_stream(pod_name, &pod_params).await?.lines();
+                while let Some(line) = logs.try_next().await? {
+                  let maestro_log_line =  MaestroLogLine::new(&line, pod_name, &job_name);
+                    yield maestro_log_line
+                }
+            }
+        }
     }
 }
 

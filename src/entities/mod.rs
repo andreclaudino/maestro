@@ -6,7 +6,6 @@ mod job_builder;
 mod maestro_job_status;
 mod maestro_job;
 mod k8s_utils;
-mod job_like;
 
 mod compute_resource;
 mod environment_variable_source;
@@ -20,7 +19,6 @@ pub mod job {
     pub use super::job_builder::JobBuilder;
     pub use super::maestro_job_status::MaestroJobStatus;
     pub use super::maestro_job::MaestroJob;
-    pub use super::job_like::JobLike;
     pub use super::maestro_log::MaestroLogLine;
 }
 

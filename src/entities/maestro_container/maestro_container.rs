@@ -15,7 +15,6 @@ pub struct MaestroContainer {
     pub(super) resource_bounds: BTreeMap<ComputeResource, Quantity>,
     pub(super) environment_variables: BTreeMap<String, EnvironmentVariableSource>,
     pub(super) environment_variables_from_objects: Vec<EnvironmentVariableFromObject>,
-
 }
 
 

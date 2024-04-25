@@ -1,20 +1,20 @@
 use k8s_openapi::api::{batch::v1::{Job, JobSpec}, core::v1::{Container, PodSpec, PodTemplateSpec}};
 use kube::api::ObjectMeta;
 
-use super::{container_like::ContainerLike, job_name_type::JobNameType, maestro_container::MaestroContainer, restart_policy::RestartPolicy};
+use super::{job_name_type::JobNameType, restart_policy::RestartPolicy};
 
 
-pub struct JobBuilder<C=MaestroContainer> where C: ContainerLike {
+pub struct JobBuilder {
     pub name: JobNameType,
     pub namespace: String,
     pub backoff_limit: usize,
 
     pub restart_policy: RestartPolicy,
-    pub containers: Vec<C>,
+    pub containers: Vec<Container>,
 }
 
-impl<C> JobBuilder<C> where C: ContainerLike {
-    pub fn new(name: &JobNameType, namespace: &str) -> JobBuilder<C> {
+impl JobBuilder{
+    pub fn new(name: &JobNameType, namespace: &str) -> JobBuilder {
         JobBuilder {
             name: name.clone(),
             namespace: namespace.to_owned(),
@@ -25,27 +25,27 @@ impl<C> JobBuilder<C> where C: ContainerLike {
         }
     }
 
-    pub fn set_defined_name(mut self, defined_name: &str) -> JobBuilder<C> {
+    pub fn set_defined_name(mut self, defined_name: &str) -> JobBuilder {
         self.name = JobNameType::DefinedName(defined_name.to_owned());
         self
     }
 
-    pub fn set_generate_name(mut self, defined_name: &str) -> JobBuilder<C> {
+    pub fn set_generate_name(mut self, defined_name: &str) -> JobBuilder {
         self.name = JobNameType::GenerateName(defined_name.to_owned());
         self
     }
 
-    pub fn set_backoff_limit(mut self, backoff_limit: usize) -> JobBuilder<C> {
+    pub fn set_backoff_limit(mut self, backoff_limit: usize) -> JobBuilder {
         self.backoff_limit = backoff_limit;
         self
     }
 
-    pub fn set_restart_policy(mut self, restart_policy: &RestartPolicy) -> JobBuilder<C> {
+    pub fn set_restart_policy(mut self, restart_policy: &RestartPolicy) -> JobBuilder {
         self.restart_policy = restart_policy.to_owned();
         self
     }
 
-    pub fn add_container(mut self, container_like: C) -> JobBuilder<C> {
+    pub fn add_container(mut self, container_like: Container) -> JobBuilder {
         self.containers.push(container_like);
         self
     }
@@ -94,10 +94,9 @@ impl<C> JobBuilder<C> where C: ContainerLike {
 
 }
 
-fn extract_container_list<C>(containers: &Vec<C>) -> Vec<Container> where C: ContainerLike {
-    containers.iter().map(|container_like|{
-        let container = container_like.into_container()?;
-        anyhow::Ok(container)
+fn extract_container_list(containers: &Vec<Container>) -> Vec<Container>{
+    containers.iter().map(|container|{
+        anyhow::Ok(container.to_owned())
     }).filter_map(|container_result| {
         if let Ok(container) = container_result {
             Some(container)

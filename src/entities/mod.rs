@@ -1,3 +1,4 @@
+pub mod maestro_log;
 mod compute_resource;
 mod environment_variable_source;
 pub mod job_name_type;

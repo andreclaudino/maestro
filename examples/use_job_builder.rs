@@ -1,4 +1,4 @@
-use k8s_openapi::api::{batch::v1::{Job, JobSpec}, core::v1::{Container, PodSpec, PodTemplateSpec}};
+use k8s_openapi::api::batch::v1::Job;
 use maestro::{clients::MaestroK8sClient, entities::{container::MaestroContainer, job::{JobBuilder, JobNameType, RestartPolicy}}};
 
 

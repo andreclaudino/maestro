@@ -1,7 +1,7 @@
 use k8s_openapi::api::batch::v1::Job;
 use kube::{api::PostParams, Api};
 
-use crate::entities::maestro_job::MaestroJob;
+use crate::entities::job::MaestroJob;
 
 pub struct MaestroK8sClient {
     client: kube::Client

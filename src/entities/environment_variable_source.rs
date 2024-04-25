@@ -1,4 +1,4 @@
-use k8s_openapi::{api::core::v1::{ConfigMapKeySelector, Container, EnvVar, EnvVarSource, ObjectFieldSelector, ResourceFieldSelector, ResourceRequirements, SecretKeySelector}, apimachinery::pkg::api::resource::Quantity};
+use k8s_openapi::api::core::v1::{ConfigMapKeySelector, EnvVar, EnvVarSource, ObjectFieldSelector, ResourceFieldSelector, SecretKeySelector};
 
 
 #[derive(Debug)]

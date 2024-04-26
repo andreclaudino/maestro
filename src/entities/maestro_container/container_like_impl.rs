@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use k8s_openapi::{api::core::v1::{Container, EnvFromSource, EnvVar, EnvVarSource, ResourceRequirements}, apimachinery::pkg::api::resource::Quantity};
+use k8s_openapi::{api::core::v1::{Container, EnvFromSource, EnvVar, EnvVarSource, ResourceRequirements, Volume, VolumeMount}, apimachinery::pkg::api::resource::Quantity};
 
-use crate::entities::{compute_resource::ComputeResource, container::EnvironmentVariableFromObject, container_like::ContainerLike};
+use crate::entities::{compute_resource::ComputeResource, container::EnvironmentVariableFromObject, container_like::ContainerLike, volumes::VolumeMountLike};
 
 use super::MaestroContainer;
 
@@ -11,6 +11,8 @@ impl ContainerLike for MaestroContainer {
         let resource_bounds = extract_resource_bounds(&self.resource_bounds);
         let environment_variables = extract_environment_variables(&self.environment_variables);
         let environments_from_objects = extract_environment_variables_from_objects(&self.environment_variables_from_objects);
+        let volume_mounts = extract_volume_mounts(&self.volume_mounts)?;
+        
 
         let container = Container {
             name: self.name.clone(),
@@ -20,12 +22,43 @@ impl ContainerLike for MaestroContainer {
 
             env: Some(environment_variables),
             env_from: Some(environments_from_objects),
+            volume_mounts: Some(volume_mounts),
 
             ..Container::default()
         };
 
         Ok(container)
     }
+
+    fn get_volumes(&self) -> anyhow::Result<Vec<Volume>> {
+        let mut volumes = Vec::new();
+        for volume_mount_like in self.volume_mounts.iter() {
+            let volume = volume_mount_like.volume_like()?.into_volume()?;
+            volumes.push(volume);
+        };
+
+        Ok(volumes)
+    }
+
+    fn add_volume_mount_like(mut self, volume_mount_like: Box<dyn VolumeMountLike>) -> anyhow::Result<Self> {
+        if self.volume_mounts.len() == 0 {
+            self.volume_mounts = vec![];
+        }
+
+        self.volume_mounts.push(volume_mount_like);
+
+        Ok(self)
+    }
+}
+
+
+fn extract_volume_mounts(volume_mount_likes: &Vec<Box<dyn VolumeMountLike>>) -> anyhow::Result<Vec<VolumeMount>> {
+    let mut volume_mounts = Vec::new();
+    for volume_mount_like in volume_mount_likes.iter() {
+        let volume_mount = volume_mount_like.into_volume_mount()?;
+        volume_mounts.push(volume_mount);
+    }
+    Ok(volume_mounts)
 }
 
 fn extract_environment_variables_from_objects(environment_variables_from_objects: &Vec<EnvironmentVariableFromObject>) -> Vec<EnvFromSource> {

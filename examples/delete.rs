@@ -15,7 +15,8 @@ pub async fn main() -> anyhow::Result<()>{
     let test_job_input = create_job(suceed_name, &namespace);
 
     let suceed_job = maestro_client.create_job(&test_job_input, namespace, dry_run).await?;
-
+    suceed_job.wait().await?;
+    suceed_job.delete_associated_pods().await?;
     suceed_job.delete_job(dry_run).await?;
     
     Ok(())
@@ -28,7 +29,7 @@ fn create_job(name: &str, namespace: &str) -> Job {
     container.args = Some(vec![
         "bash".to_owned(),
         "-c".to_owned(),
-        "echo 'Testing pod'; sleep 3; echo 'Finalizado'".to_owned()
+        "echo 'Testing pod'; sleep 3; echo 'Finalizado'; exit 137".to_owned()
     ]);
 
     let mut pod_spec = PodSpec::default();
@@ -40,7 +41,7 @@ fn create_job(name: &str, namespace: &str) -> Job {
     
     let mut job_spec = JobSpec::default();
     job_spec.template = pod_template_spec;
-    job_spec.backoff_limit = Some(2);
+    job_spec.backoff_limit = Some(5);
 
     let mut job = Job::default();
     job.metadata.name = Some(name.to_owned());

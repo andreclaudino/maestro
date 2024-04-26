@@ -1,7 +1,7 @@
 use k8s_openapi::api::core::v1::{ConfigMapKeySelector, EnvVar, EnvVarSource, ObjectFieldSelector, ResourceFieldSelector, SecretKeySelector};
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EnvironmentVariableSource {
     Value(String),
     ConfigMap(ConfigMapKeySelector),

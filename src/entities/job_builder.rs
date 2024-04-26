@@ -1,7 +1,7 @@
-use k8s_openapi::api::{batch::v1::{Job, JobSpec}, core::v1::{Container, PodSpec, PodTemplateSpec}};
+use k8s_openapi::api::{batch::v1::{Job, JobSpec}, core::v1::{Container, PodSpec, PodTemplateSpec, Volume}};
 use kube::api::ObjectMeta;
 
-use super::{job_name_type::JobNameType, restart_policy::RestartPolicy};
+use super::{container_like::ContainerLike, job_name_type::JobNameType, restart_policy::RestartPolicy};
 
 
 pub struct JobBuilder {
@@ -10,7 +10,8 @@ pub struct JobBuilder {
     pub backoff_limit: usize,
 
     pub restart_policy: RestartPolicy,
-    pub containers: Vec<Container>,
+    pub containers: Vec<Box<dyn ContainerLike>>,
+    pub volumes: Vec<Volume>
 }
 
 impl JobBuilder{
@@ -22,6 +23,7 @@ impl JobBuilder{
             backoff_limit: 6,
             restart_policy: RestartPolicy::default(),
             containers: Vec::new(),
+            volumes: Vec::new(),
         }
     }
 
@@ -45,9 +47,11 @@ impl JobBuilder{
         self
     }
 
-    pub fn add_container(mut self, container_like: Container) -> JobBuilder {
+    pub fn add_container(mut self, container_like: Box<dyn ContainerLike>) -> anyhow::Result<JobBuilder> {
+        self.add_container_volumes(&container_like)?;
         self.containers.push(container_like);
-        self
+        
+        Ok(self)
     }
 
     pub fn build(self) -> anyhow::Result<Job> {
@@ -55,12 +59,13 @@ impl JobBuilder{
         let pod_spec = PodSpec {
             restart_policy: self.restart_policy.into(),
             containers: extract_container_list(&self.containers),
+            volumes: Some(self.volumes),
             ..PodSpec::default()
         };
 
         let pod_template_spec = PodTemplateSpec{
             spec: Some(pod_spec),
-
+            
             ..PodTemplateSpec::default()
         };
                 
@@ -92,10 +97,20 @@ impl JobBuilder{
         Ok(job)
     }
 
+    fn add_container_volumes(&mut self, container_like: &Box<dyn ContainerLike>) -> Result<(), anyhow::Error> {
+        let mut container_volumes = container_like.get_volumes()?;
+        if self.volumes.len() == 0 {
+            self.volumes = vec![]
+        }
+        self.volumes.append(&mut container_volumes);
+        Ok(())
+    }
+    
 }
 
-fn extract_container_list(containers: &Vec<Container>) -> Vec<Container>{
-    containers.iter().map(|container|{
+fn extract_container_list(containers: &Vec<Box<dyn ContainerLike>>) -> Vec<Container>{
+    containers.iter().map(|container_line|{
+        let container = container_line.into_container()?;
         anyhow::Ok(container.to_owned())
     }).filter_map(|container_result| {
         if let Ok(container) = container_result {

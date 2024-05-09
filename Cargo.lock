@@ -933,6 +933,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "k8s-maestro"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "clap",
+ "env_logger",
+ "futures",
+ "k8s-openapi",
+ "kube",
+ "lazy_static",
+ "log",
+ "serde",
+ "serde_yml",
+ "tokio",
+]
+
+[[package]]
 name = "k8s-openapi"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1084,24 +1102,6 @@ name = "log"
 version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
-
-[[package]]
-name = "maestro"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-stream",
- "clap",
- "env_logger",
- "futures",
- "k8s-openapi",
- "kube",
- "lazy_static",
- "log",
- "serde",
- "serde_yml",
- "tokio",
-]
 
 [[package]]
 name = "match_cfg"

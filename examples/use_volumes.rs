@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use k8s_openapi::{api::batch::v1::Job, apimachinery::pkg::api::resource::Quantity};
-use maestro::{clients::MaestroK8sClient, entities::{container::{ComputeResource, ContainerLike, EnvironmentVariableFromObject, EnvironmentVariableSource, MaestroContainer}, job::{JobBuilder, JobNameType, RestartPolicy}, volumes::MaestroPVCMountVolumeBuilder}};
+use k8s_maestro::{clients::MaestroK8sClient, entities::{container::{ComputeResource, ContainerLike, EnvironmentVariableFromObject, EnvironmentVariableSource, MaestroContainer}, job::{JobBuilder, JobNameType, RestartPolicy}, volumes::MaestroPVCMountVolumeBuilder}};
 use futures::{pin_mut, StreamExt};
 
 

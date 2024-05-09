@@ -1,5 +1,5 @@
 use k8s_openapi::api::{batch::v1::{Job, JobSpec}, core::v1::{Container, PodSpec, PodTemplateSpec}};
-use maestro::clients::MaestroK8sClient;
+use k8s_maestro::clients::MaestroK8sClient;
 
 
 #[tokio::main(flavor="current_thread")]

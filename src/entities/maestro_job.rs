@@ -2,7 +2,7 @@ use k8s_openapi::api::core::v1::Pod;
 use anyhow::Ok;
 use futures::{pin_mut, AsyncBufReadExt, Stream, StreamExt, TryStreamExt};
 use k8s_openapi::api::batch::v1::Job;
-use kube::{api::{DeleteParams, ListParams, LogParams}, runtime::{reflector::Lookup, watcher::{watcher, Config as WatcherConfig}, WatchStreamExt}, Api, Client};
+use kube::{api::{DeleteParams, ListParams, LogParams}, runtime::{watcher::{watcher, Config as WatcherConfig}, WatchStreamExt}, Api, Client};
 use async_stream::try_stream;
 
 use super::{maestro_job_status::MaestroJobStatus, maestro_log::MaestroLogLine};
@@ -107,7 +107,6 @@ impl MaestroJob {
 
         Ok(())
     }
-
 
     pub async fn stream_pods(&self, field_selector: Option<String>, timeout: Option<u32>) -> impl Stream<Item=anyhow::Result<Pod>> {
         let client = self.client.clone();

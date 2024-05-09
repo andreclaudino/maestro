@@ -1,7 +1,14 @@
 [package]
-name = "maestro"
+name = "k8s-maestro"
 version = "0.1.0"
 edition = "2021"
+
+description = "A Kubernetes job orchestrator tool library"
+license = "MIT OR Apache-2.0"
+categories = []
+
+[lib]
+name = "k8s_maestro"
 
 [dependencies]
 log = "0.4.17"
